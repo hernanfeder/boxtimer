@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WorkoutConfig } from "@/lib/types";
 import { loadConfigs, deleteConfig, formatSummary } from "@/lib/storage";
 import { Button } from "./Button";
@@ -27,13 +27,13 @@ export function HomeScreen({ onNewWorkout, onSelectConfig }: Props) {
   };
 
   // long-press detection
-  let pressTimer: ReturnType<typeof setTimeout> | null = null;
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startPress = (c: WorkoutConfig) => {
-    pressTimer = setTimeout(() => setPendingDelete(c), 600);
+    pressTimer.current = setTimeout(() => setPendingDelete(c), 600);
   };
   const endPress = () => {
-    if (pressTimer) clearTimeout(pressTimer);
-    pressTimer = null;
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
   };
 
   return (
