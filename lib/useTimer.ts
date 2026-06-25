@@ -113,6 +113,9 @@ export function useTimer(
       if (raf.current !== null) cancelAnimationFrame(raf.current);
     };
     // Re-run only when the phase list identity changes (new config / restart key).
+    // INVARIANT: callers must pass a referentially stable `config` (e.g. React
+    // state, not a fresh object literal each render). `phases` is memoized on
+    // `config` identity, so an unstable config would restart the timer every render.
   }, [phases, totalDuration, startPhase, audio]);
 
   const togglePause = useCallback(() => {

@@ -38,15 +38,20 @@ export async function POST(req: Request) {
         : transcript;
 
     const client = new Anthropic({ apiKey });
-    const params = {
+    // output_config guarantees JSON-only output. It is typed loosely because the
+    // pinned @anthropic-ai/sdk predates the output_config field; the Messages API
+    // supports it on claude-haiku-4-5. If an older SDK drops the field, the system
+    // prompt + JSON.parse + zod validation below still enforce a valid result, so
+    // the route degrades gracefully rather than breaking.
+    const params: Anthropic.MessageCreateParamsNonStreaming & { output_config?: unknown } = {
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userContent }],
       output_config: {
         format: { type: "json_schema", schema: parsedWorkoutJsonSchema() },
       },
-      messages: [{ role: "user", content: userContent }],
-    } as unknown as Anthropic.MessageCreateParamsNonStreaming;
+    };
 
     const response = await client.messages.create(params);
 
