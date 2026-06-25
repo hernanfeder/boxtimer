@@ -1,0 +1,20 @@
+{
+  "project": "BoxTimer",
+  "last_updated": "2026-06-25",
+  "completed": [
+    "Brainstorming + design decisions (PWA depth, icons, verification)",
+    "Design spec written and approved (docs/superpowers/specs/2026-06-25-boxtimer-design.md)"
+  ],
+  "in_progress": [
+    "Implementation plan (writing-plans)"
+  ],
+  "blockers": [
+    "Project directory is not a git repository — design doc could not be committed; init git before first code commit"
+  ],
+  "next_steps": [
+    "Produce implementation plan",
+    "Scaffold Next.js 14 + Tailwind + TypeScript",
+    "Implement lib modules, screens, API route, PWA, icon generation",
+    "next build + tsc --noEmit verification"
+  ]
+}
