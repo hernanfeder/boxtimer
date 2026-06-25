@@ -72,4 +72,18 @@ describe("storage CRUD", () => {
     localStorage.setItem("boxtimer_configs", "not json");
     expect(loadConfigs()).toEqual([]);
   });
+  it("drops malformed entries when loading", () => {
+    const valid = {
+      id: "id-x",
+      name: "Valid",
+      preparation: 10,
+      rounds: [30],
+      rest: 5,
+      createdAt: "2026-06-25T00:00:00.000Z",
+    };
+    localStorage.setItem("boxtimer_configs", JSON.stringify([valid, { junk: true }, { rounds: [] }]));
+    const configs = loadConfigs();
+    expect(configs).toHaveLength(1);
+    expect(configs[0].name).toBe("Valid");
+  });
 });

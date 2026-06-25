@@ -1,4 +1,5 @@
 import type { WorkoutConfig, ParsedWorkout } from "./types";
+import { workoutConfigSchema } from "./schema";
 
 const KEY = "boxtimer_configs";
 const MAX = 20;
@@ -9,7 +10,9 @@ export function loadConfigs(): WorkoutConfig[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed as WorkoutConfig[];
+    return parsed.filter(
+      (item): item is WorkoutConfig => workoutConfigSchema.safeParse(item).success,
+    );
   } catch {
     return [];
   }
