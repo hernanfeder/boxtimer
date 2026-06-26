@@ -43,7 +43,7 @@ export class AudioEngine {
   }
 
   /** Play the bell sample, capped to its first `maxDuration` seconds. */
-  private playBell(at = 0, maxDuration = 2, gainValue = 1): void {
+  private playBell(at = 0, maxDuration = 3, gainValue = 1): void {
     if (!this.ctx || !this.bellBuffer) return;
     const t = this.ctx.currentTime + at;
     const src = this.ctx.createBufferSource();
@@ -121,7 +121,7 @@ export class AudioEngine {
     this.tone(784, 0.7, 0.28, 0.32);
   }
 
-  /** Round begins — a single bell ring (first 2s of the sample). */
+  /** Round begins — a single bell ring (first 3s of the sample). */
   roundStartBell(): void {
     if (this.bellBuffer) {
       this.playBell(0);
