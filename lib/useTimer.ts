@@ -40,18 +40,13 @@ export function useTimer(
   const lastBeepSecond = useRef<number>(-1);
   const elapsedBefore = useRef<number>(0); // sum of durations of completed phases
 
-  const startPhase = useCallback(
-    (index: number, now: number) => {
-      phaseIndex.current = index;
-      phaseStart.current = now;
-      lastBeepSecond.current = -1;
-      const p = phases[index];
-      if (!p) return;
-      if (p.kind === "rest") audio.doubleBeep();
-      else audio.bell(); // prep or round
-    },
-    [phases, audio],
-  );
+  // Sets the refs for a phase; cue sounds are triggered by the boundary logic
+  // in the rAF loop, not here.
+  const startPhase = useCallback((index: number, now: number) => {
+    phaseIndex.current = index;
+    phaseStart.current = now;
+    lastBeepSecond.current = -1;
+  }, []);
 
   useEffect(() => {
     if (phases.length === 0) return;
@@ -60,6 +55,7 @@ export function useTimer(
     phaseStart.current = begin;
     elapsedBefore.current = 0;
     startPhase(0, begin);
+    audio.startSignal(); // workout begins
 
     const tick = (now: number) => {
       if (!mounted) return;
@@ -82,10 +78,14 @@ export function useTimer(
         const next = phaseIndex.current + 1;
         elapsedBefore.current += p.duration;
         if (next >= phases.length) {
-          audio.tripleBell();
+          audio.finishSignal(); // exercise complete
           setState((s) => ({ ...s, done: true, remaining: 0, elapsed: totalDuration }));
           return; // stop loop
         }
+        // Boundary cues: a round ending rings the end bell; a round starting
+        // rings the begin bell. Rest has no sound of its own.
+        if (p.kind === "round") audio.roundEndBell();
+        if (phases[next].kind === "round") audio.roundStartBell();
         startPhase(next, now);
         setState({
           phase: phases[next],

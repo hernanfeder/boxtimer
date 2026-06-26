@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { ParsedWorkout, Screen, WorkoutConfig } from "@/lib/types";
 import { AudioEngine } from "@/lib/audio";
+import { persistConfig } from "@/lib/storage";
 import { HomeScreen } from "./HomeScreen";
 import { VoiceConfigScreen } from "./VoiceConfigScreen";
 import { TimerScreen } from "./TimerScreen";
@@ -14,6 +15,9 @@ export function RootApp() {
   const audioRef = useRef<AudioEngine>(new AudioEngine());
   const [screen, setScreen] = useState<Screen>("home");
   const [activeConfig, setActiveConfig] = useState<ActiveConfig | null>(null);
+  // The voice-created config eligible to be saved on the Done screen. Null when
+  // the workout was launched from an already-saved card (or after it's saved).
+  const [saveable, setSaveable] = useState<ActiveConfig | null>(null);
   const [lastElapsed, setLastElapsed] = useState(0);
   const [timerKey, setTimerKey] = useState(0);
 
@@ -25,6 +29,7 @@ export function RootApp() {
 
   const goHome = () => {
     setActiveConfig(null);
+    setSaveable(null);
     setScreen("home");
   };
 
@@ -34,6 +39,7 @@ export function RootApp() {
         onNewWorkout={() => setScreen("voice")}
         onSelectConfig={(c: WorkoutConfig) => {
           void audioRef.current.resume();
+          setSaveable(null); // already saved
           startTimer(c);
         }}
       />
@@ -44,7 +50,10 @@ export function RootApp() {
     return (
       <VoiceConfigScreen
         audio={audioRef.current}
-        onStart={(c: ParsedWorkout) => startTimer(c)}
+        onStart={(c: ParsedWorkout) => {
+          setSaveable(c); // offer to save it after the workout
+          startTimer(c);
+        }}
       />
     );
   }
@@ -68,6 +77,11 @@ export function RootApp() {
     return (
       <DoneScreen
         elapsed={lastElapsed}
+        canSave={saveable !== null}
+        onSave={(name) => {
+          if (saveable) persistConfig(saveable, name);
+          setSaveable(null);
+        }}
         onRepeat={() => {
           if (!activeConfig) return goHome();
           void audioRef.current.resume();
@@ -81,6 +95,12 @@ export function RootApp() {
 
   // fallback
   return (
-    <HomeScreen onNewWorkout={() => setScreen("voice")} onSelectConfig={(c) => startTimer(c)} />
+    <HomeScreen
+      onNewWorkout={() => setScreen("voice")}
+      onSelectConfig={(c) => {
+        setSaveable(null);
+        startTimer(c);
+      }}
+    />
   );
 }

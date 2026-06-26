@@ -22,7 +22,7 @@ export class AudioEngine {
     }
   }
 
-  /** A single decaying tone. `at` is an offset (seconds) from now. */
+  /** A single decaying sine tone. `at` is an offset (seconds) from now. */
   private tone(freq: number, peak: number, duration: number, at = 0): void {
     if (!this.ctx) return;
     const start = this.ctx.currentTime + at;
@@ -37,22 +37,40 @@ export class AudioEngine {
     osc.stop(start + duration);
   }
 
-  bell(): void {
-    this.tone(800, 0.8, 1.5);
+  /** A metallic bell strike: fundamental plus two inharmonic partials. */
+  private bellStrike(freq: number, peak: number, duration: number, at = 0): void {
+    this.tone(freq, peak, duration, at);
+    this.tone(freq * 2.0, peak * 0.5, duration * 0.8, at);
+    this.tone(freq * 2.96, peak * 0.25, duration * 0.6, at);
   }
 
-  doubleBeep(): void {
-    this.tone(400, 0.6, 0.15, 0);
-    this.tone(400, 0.6, 0.15, 0.35); // 0.15 + 0.2 gap
+  /** Exercise start — rising 3-note chime, intentionally not a bell. */
+  startSignal(): void {
+    this.tone(523, 0.6, 0.16, 0);
+    this.tone(659, 0.6, 0.16, 0.16);
+    this.tone(784, 0.7, 0.28, 0.32);
   }
 
+  /** Round begins — single bright boxing-bell clang. */
+  roundStartBell(): void {
+    this.bellStrike(880, 0.85, 1.0);
+  }
+
+  /** Round ends — lower, double "ding-ding" boxing bell (distinct from the start bell). */
+  roundEndBell(): void {
+    this.bellStrike(740, 0.8, 0.45, 0);
+    this.bellStrike(740, 0.8, 0.45, 0.18);
+  }
+
+  /** Last 3 seconds of a phase — short countdown tick. */
   countdownBeep(): void {
     this.tone(600, 0.5, 0.1);
   }
 
-  tripleBell(): void {
-    this.tone(800, 0.8, 0.4, 0);
-    this.tone(800, 0.8, 0.4, 0.5);
-    this.tone(800, 0.8, 0.4, 1.0);
+  /** Exercise complete — ascending bell fanfare, a distinct finale. */
+  finishSignal(): void {
+    this.bellStrike(660, 0.8, 0.5, 0);
+    this.bellStrike(880, 0.8, 0.5, 0.45);
+    this.bellStrike(1175, 0.9, 1.4, 0.9);
   }
 }

@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import type { ParsedWorkout } from "@/lib/types";
-import { useSpeechRecognition, speak } from "@/lib/useSpeech";
+import { useSpeechRecognition } from "@/lib/useSpeech";
 import { parseWorkout } from "@/lib/parseClient";
-import { persistConfig, formatSummary } from "@/lib/storage";
 import type { AudioEngine } from "@/lib/audio";
 import { Button } from "./Button";
 
@@ -13,21 +12,13 @@ type Props = {
   onStart: (c: ParsedWorkout) => void;
 };
 
-type Stage = "idle" | "parsing" | "review" | "naming";
-
-function buildReadback(c: ParsedWorkout): string {
-  const rounds = c.rounds
-    .map((d, i) => `Round ${i + 1}: ${d} seconds`)
-    .join(", ");
-  return `${c.rounds.length} rounds. ${rounds}. Rest: ${c.rest} seconds. Preparation: ${c.preparation} seconds. Ready to start?`;
-}
+type Stage = "idle" | "parsing" | "review";
 
 export function VoiceConfigScreen({ audio, onStart }: Props) {
   const { supported, listening, transcript, start, stop, reset } = useSpeechRecognition();
   const [stage, setStage] = useState<Stage>("idle");
   const [parsed, setParsed] = useState<ParsedWorkout | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState("");
 
   const handleMic = async () => {
     setError(null);
@@ -48,7 +39,6 @@ export function VoiceConfigScreen({ audio, onStart }: Props) {
       const result = await parseWorkout(text);
       setParsed(result);
       setStage("review");
-      speak(buildReadback(result));
     } catch {
       setError("Couldn't understand that, please try again");
       setStage("idle");
@@ -57,18 +47,13 @@ export function VoiceConfigScreen({ audio, onStart }: Props) {
 
   const handleStart = async () => {
     await audio.resume(); // unlock audio on user gesture
-    setStage("naming");
+    if (parsed) onStart(parsed);
   };
 
-  const finishWithSave = () => {
-    if (!parsed) return;
-    persistConfig(parsed, name);
-    onStart(parsed);
-  };
-
-  const finishSkip = () => {
-    if (!parsed) return;
-    onStart(parsed);
+  const reRecord = () => {
+    setParsed(null);
+    setStage("idle");
+    reset();
   };
 
   return (
@@ -117,41 +102,26 @@ export function VoiceConfigScreen({ audio, onStart }: Props) {
 
       {stage === "review" && parsed && (
         <div className="flex w-full max-w-sm flex-col items-center">
-          <p className="mb-6 text-center text-lg font-medium">{formatSummary(parsed)}</p>
+          <p className="mb-1 text-center text-4xl font-extrabold">
+            {parsed.rounds.length} {parsed.rounds.length === 1 ? "round" : "rounds"}
+          </p>
+          <p className="mb-6 text-center text-xl text-brand-navy/70">
+            {parsed.preparation}s prep · {parsed.rest}s rest
+          </p>
+          <ul className="mb-8 w-full text-center text-2xl font-semibold">
+            {parsed.rounds.map((d, i) => (
+              <li key={i}>
+                Round {i + 1}: {d}s
+              </li>
+            ))}
+          </ul>
           <div className="flex w-full flex-col gap-3">
             <Button onClick={handleStart}>Start</Button>
             <Button
               className="!bg-white !text-brand-navy border-2 border-brand-navy"
-              onClick={() => {
-                setParsed(null);
-                setStage("idle");
-                reset();
-              }}
+              onClick={reRecord}
             >
               Re-record
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {stage === "naming" && (
-        <div className="flex w-full max-w-sm flex-col gap-3">
-          <label className="text-center text-lg font-medium">Name this workout? (optional)</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Boxing Bag"
-            className="rounded-xl border-2 border-brand-navy px-4 py-3 text-brand-navy"
-          />
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={finishWithSave}>
-              Save
-            </Button>
-            <Button
-              className="flex-1 !bg-white !text-brand-navy border-2 border-brand-navy"
-              onClick={finishSkip}
-            >
-              Skip
             </Button>
           </div>
         </div>
