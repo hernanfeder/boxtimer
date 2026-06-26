@@ -2,6 +2,8 @@ type Win = Window & typeof globalThis & { webkitAudioContext?: typeof AudioConte
 
 export class AudioEngine {
   private ctx: AudioContext | null = null;
+  private bellBuffer: AudioBuffer | null = null;
+  private bellLoading: Promise<void> | null = null;
 
   private getCtor(): typeof AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -20,6 +22,36 @@ export class AudioEngine {
         /* ignore */
       }
     }
+    void this.loadBell(); // warm the bell sample (no-op after first load)
+  }
+
+  /** Fetch + decode the bell sample once. Silent fallback to FM bells on failure. */
+  private async loadBell(): Promise<void> {
+    if (this.bellBuffer || !this.ctx) return;
+    if (this.bellLoading) return this.bellLoading;
+    const ctx = this.ctx;
+    this.bellLoading = (async () => {
+      try {
+        const res = await fetch("/bell.ogg");
+        const data = await res.arrayBuffer();
+        this.bellBuffer = await ctx.decodeAudioData(data);
+      } catch {
+        this.bellBuffer = null; // fall back to synthesized bells
+      }
+    })();
+    return this.bellLoading;
+  }
+
+  /** Play the bell sample, capped to its first `maxDuration` seconds. */
+  private playBell(at = 0, maxDuration = 2, gainValue = 1): void {
+    if (!this.ctx || !this.bellBuffer) return;
+    const t = this.ctx.currentTime + at;
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.bellBuffer;
+    const g = this.ctx.createGain();
+    g.gain.value = gainValue;
+    src.connect(g).connect(this.ctx.destination);
+    src.start(t, 0, maxDuration);
   }
 
   /** A single decaying sine tone. `at` is an offset (seconds) from now. */
@@ -89,15 +121,24 @@ export class AudioEngine {
     this.tone(784, 0.7, 0.28, 0.32);
   }
 
-  /** Round begins — single bright boxing-bell clang. */
+  /** Round begins — a single bell ring (first 2s of the sample). */
   roundStartBell(): void {
-    this.fmBell(880, 0.85, 1.3);
+    if (this.bellBuffer) {
+      this.playBell(0);
+    } else {
+      this.fmBell(880, 0.85, 1.3); // fallback if the sample didn't load
+    }
   }
 
-  /** Round ends — lower, double "ding-ding" boxing bell (distinct from the start bell). */
+  /** Round ends — a double "ding-ding" ring, distinct from the single start ring. */
   roundEndBell(): void {
-    this.fmBell(620, 0.8, 0.55, 0);
-    this.fmBell(620, 0.8, 0.55, 0.22);
+    if (this.bellBuffer) {
+      this.playBell(0);
+      this.playBell(0.45);
+    } else {
+      this.fmBell(620, 0.8, 0.55, 0);
+      this.fmBell(620, 0.8, 0.55, 0.22);
+    }
   }
 
   /** Last 3 seconds of a phase — short countdown tick. */
@@ -105,10 +146,16 @@ export class AudioEngine {
     this.tone(600, 0.5, 0.1);
   }
 
-  /** Exercise complete — ascending bell fanfare, a distinct finale. */
+  /** Exercise complete — a triple ring, a distinct "you're done" peal. */
   finishSignal(): void {
-    this.fmBell(660, 0.8, 0.6, 0);
-    this.fmBell(880, 0.8, 0.6, 0.45);
-    this.fmBell(1175, 0.9, 1.7, 0.95);
+    if (this.bellBuffer) {
+      this.playBell(0);
+      this.playBell(0.5);
+      this.playBell(1.0);
+    } else {
+      this.fmBell(660, 0.8, 0.6, 0);
+      this.fmBell(880, 0.8, 0.6, 0.45);
+      this.fmBell(1175, 0.9, 1.7, 0.95);
+    }
   }
 }

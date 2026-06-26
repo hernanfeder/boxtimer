@@ -1,5 +1,5 @@
-const CACHE = "boxtimer-v1";
-const SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE = "boxtimer-v2";
+const SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png", "/bell.ogg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
