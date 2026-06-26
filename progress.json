@@ -1,6 +1,7 @@
 {
   "project": "BoxTimer",
   "last_updated": "2026-06-26",
+  "next_review": "Re-test in Chrome: confirm no spoken readback (bigger config shown), the four distinct sounds, and save offered only after a voice workout",
   "completed": [
     "Brainstorming + design decisions (PWA depth, icons, verification)",
     "Design spec written and approved (docs/superpowers/specs/2026-06-25-boxtimer-design.md)",
@@ -8,7 +9,8 @@
     "All 19 plan tasks implemented via subagent-driven development, each task reviewed (spec + quality)",
     "Final whole-branch review (opus): approved, no Critical findings; two Important findings fixed",
     "Verification green: 18/18 vitest tests, tsc --noEmit clean, next build success",
-    "Merged feat/boxtimer-mvp into main and pushed to github.com/hernanfeder/boxtimer"
+    "Merged feat/boxtimer-mvp into main and pushed to github.com/hernanfeder/boxtimer",
+    "Post-launch tweaks (2026-06-26): removed spoken readback (bigger on-screen confirm); moved save to Done screen (voice workouts only); distinct exercise-start chime; round-begin vs round-end boxing bells; distinct finish fanfare; kept 3-2-1 countdown. Merged + pushed (50a43fc)"
   ],
   "in_progress": [],
   "blockers": [],
